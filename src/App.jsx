@@ -1,8 +1,10 @@
+// src/App.jsx
 import React from 'react';
 import { useChat } from './hooks/useChat';
 import Sidebar from './components/Sidebar';
 import Chat from './components/Chat';
 import ModelSelector from './components/ModelSelector';
+import ErrorAlert from './components/ErrorAlert';
 
 function App() {
   const {
@@ -17,39 +19,51 @@ function App() {
     loadThread,
     deleteThread,
     switchMode,
+    setError
   } = useChat();
 
+  const handleSend = async (message) => {
+    if (message.trim()) {
+      await sendMessage(message);
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="hidden md:flex md:w-[260px] md:flex-col">
+      <div className="hidden md:flex md:flex-col md:w-[260px] bg-gray-900">
         <Sidebar
           threads={threads}
           currentThread={currentThread}
           onSelect={loadThread}
           onNew={createThread}
           onDelete={deleteThread}
+          mode={mode}
         />
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex flex-1 flex-col">
-        <main className="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1">
-          <div className="flex-1 overflow-hidden">
-            {error && (
-              <div className="p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
-                {error}
-              </div>
-            )}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {error && (
+          <ErrorAlert 
+            message={error} 
+            onDismiss={() => setError(null)}
+          />
+        )}
+
+        <main className="flex-1 overflow-hidden relative">
+          <div className="h-full flex flex-col">
             <Chat
               messages={messages}
               isLoading={isLoading}
-              onSendMessage={sendMessage}
+              onSendMessage={handleSend}
+              mode={mode}
             />
           </div>
-          {/* Model Selector at Bottom */}
-          <div className="absolute bottom-0 left-0 w-full">
-            <div className="stretch mx-2 flex flex-row gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
+
+          {/* Model Selector */}
+          <div className="absolute bottom-0 left-0 w-full bg-white border-t border-gray-200">
+            <div className="max-w-3xl mx-auto px-4">
               <ModelSelector 
                 mode={mode}
                 onModeChange={switchMode}
