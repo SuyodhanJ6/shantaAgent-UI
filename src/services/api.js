@@ -1,110 +1,45 @@
-import { useState, useCallback } from 'react';
-import { chatApi } from '../services/api';
-import { MODES } from '../utils/constants';
+const API_URL = 'http://localhost:8000/v1';
 
-export function useChat() {
-  const [messages, setMessages] = useState([]);
-  const [threads, setThreads] = useState([]);
-  const [currentThread, setCurrentThread] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState(MODES.CHAT);
-  const [error, setError] = useState(null);
-
-  const sendMessage = useCallback(async (message) => {
-    if (!currentThread) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Add user message immediately
-      const userMessage = { type: 'human', content: message };
-      setMessages(prev => [...prev, userMessage]);
-
-      // Send to API
-      const response = await chatApi.sendMessage(message, currentThread, mode);
-      setMessages(prev => [...prev, response]);
-    } catch (err) {
-      setError(err.message);
-      setMessages(prev => [...prev, {
-        type: 'ai',
-        content: 'Sorry, there was an error processing your request.',
-        metadata: { error: err.message }
-      }]);
-    } finally {
-      setIsLoading(false);
+export const chatApi = {
+  async sendMessage(message, threadId, mode = 'chat') {
+    const endpoint = mode === 'research' ? '/research' : '/chat';
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, thread_id: threadId })
+    });
+    if (!response.ok) {
+      throw new Error('Failed to send message');
     }
-  }, [currentThread, mode]);
+    return response.json();
+  },
 
-  const createThread = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const response = await chatApi.createThread();
-      const newThread = {
-        id: response.thread_id,
-        timestamp: new Date(),
-      };
-      setThreads(prev => [...prev, newThread]);
-      setCurrentThread(response.thread_id);
-      setMessages([]);
-      return response.thread_id;
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+  async createThread() {
+    const response = await fetch(`${API_URL}/chat/new`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to create thread');
     }
-  }, []);
+    return response.json();
+  },
 
-  const loadThread = useCallback(async (threadId) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const history = await chatApi.getHistory(threadId, mode);
-      setMessages(history.messages);
-      setCurrentThread(threadId);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+  async getHistory(threadId, mode = 'chat') {
+    const endpoint = mode === 'research' ? '/research/history' : '/chat/history';
+    const response = await fetch(`${API_URL}${endpoint}/${threadId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch history');
     }
-  }, [mode]);
+    return response.json();
+  },
 
-  const deleteThread = useCallback(async (threadId) => {
-    setError(null);
-    
-    try {
-      await chatApi.deleteThread(threadId);
-      setThreads(prev => prev.filter(thread => thread.id !== threadId));
-      if (currentThread === threadId) {
-        setCurrentThread(null);
-        setMessages([]);
-      }
-    } catch (err) {
-      setError(err.message);
+  async deleteThread(threadId) {
+    const response = await fetch(`${API_URL}/chat/history/${threadId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete thread');
     }
-  }, [currentThread]);
-
-  const switchMode = useCallback((newMode) => {
-    setMode(newMode);
-    if (currentThread) {
-      loadThread(currentThread);
-    }
-  }, [currentThread, loadThread]);
-
-  return {
-    messages,
-    threads,
-    currentThread,
-    isLoading,
-    mode,
-    error,
-    sendMessage,
-    createThread,
-    loadThread,
-    deleteThread,
-    switchMode,
-  };
-}
+    return response.json();
+  }
+};

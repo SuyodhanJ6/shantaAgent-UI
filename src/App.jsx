@@ -20,29 +20,43 @@ function App() {
   } = useChat();
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar
-        threads={threads}
-        currentThread={currentThread}
-        onSelect={loadThread}
-        onNew={createThread}
-        onDelete={deleteThread}
-      />
-      <div className="flex-1 flex flex-col">
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            {error}
+    <div className="flex h-screen bg-white">
+      {/* Sidebar */}
+      <div className="hidden md:flex md:w-[260px] md:flex-col">
+        <Sidebar
+          threads={threads}
+          currentThread={currentThread}
+          onSelect={loadThread}
+          onNew={createThread}
+          onDelete={deleteThread}
+        />
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex flex-1 flex-col">
+        <main className="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1">
+          <div className="flex-1 overflow-hidden">
+            {error && (
+              <div className="p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
+                {error}
+              </div>
+            )}
+            <Chat
+              messages={messages}
+              isLoading={isLoading}
+              onSendMessage={sendMessage}
+            />
           </div>
-        )}
-        <Chat
-          messages={messages}
-          isLoading={isLoading}
-          onSendMessage={sendMessage}
-        />
-        <ModelSelector 
-          mode={mode}
-          onModeChange={switchMode}
-        />
+          {/* Model Selector at Bottom */}
+          <div className="absolute bottom-0 left-0 w-full">
+            <div className="stretch mx-2 flex flex-row gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
+              <ModelSelector 
+                mode={mode}
+                onModeChange={switchMode}
+              />
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
